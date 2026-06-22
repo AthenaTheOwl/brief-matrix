@@ -14,6 +14,26 @@ from brief_matrix.loader import TenantError, load_tenant
 
 ISO_WEEK_RE = re.compile(r"(\d{4}-W\d{2})")
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+TENANTS_DIR = REPO_ROOT / "tenants"
+
+
+def _default_tenant() -> str | None:
+    """Return the sole tenant dir under tenants/, or None if ambiguous/absent.
+
+    When exactly one tenant directory exists it is the canonical default, so
+    `python -m brief_matrix validate` works with no args against the bundled
+    fixture tenant.
+    """
+    if not TENANTS_DIR.is_dir():
+        return None
+    candidates = [
+        d for d in sorted(TENANTS_DIR.iterdir()) if (d / "config.yaml").exists()
+    ]
+    if len(candidates) == 1:
+        return str(candidates[0])
+    return None
+
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -23,7 +43,11 @@ def _build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_validate = sub.add_parser("validate", help="Validate a tenant directory.")
-    p_validate.add_argument("--tenant", required=True, help="Path to tenant dir.")
+    p_validate.add_argument(
+        "--tenant",
+        default=None,
+        help="Path to tenant dir. Defaults to the sole tenant under tenants/.",
+    )
 
     p_calibrate = sub.add_parser("calibrate", help="Score a brief and append to ledger.")
     p_calibrate.add_argument("--tenant", required=True, help="Path to tenant dir.")
@@ -55,8 +79,16 @@ def _infer_iso_week(brief_path: str) -> str | None:
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
+    tenant_dir = args.tenant or _default_tenant()
+    if tenant_dir is None:
+        print(
+            "validate: FAIL  no --tenant given and could not pick a default "
+            "(zero or multiple tenants under tenants/).",
+            file=sys.stderr,
+        )
+        return 1
     try:
-        tenant = load_tenant(args.tenant)
+        tenant = load_tenant(tenant_dir)
     except TenantError as exc:
         print(f"validate: FAIL\n{exc}", file=sys.stderr)
         return 1
