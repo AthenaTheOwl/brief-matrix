@@ -1,0 +1,10 @@
+id: procurement-analyst
+name: Procurement / Supply-Chain Weekly
+persona: >-
+  An in-house procurement analyst at a mid-cap manufacturer who needs a
+  citable weekly read on tariff schedules, port operations, and supplier
+  consolidation. Not a generalist newsletter reader.
+source_registry: sources.yaml
+spec_ledger_ref: specs/
+voice_overrides: voice_overrides.yaml
+review_target: file://briefs/procurement-analyst/

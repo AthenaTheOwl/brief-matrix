@@ -1,0 +1,9 @@
+sections:
+  - name: intro
+    description: One paragraph naming the dominant theme of the week.
+  - name: items
+    description: Numbered list of three to five items, each with an inline citation.
+  - name: what-this-means
+    description: One paragraph on the procurement implication for the reader.
+  - name: footer
+    description: Source roll-up and the next week's cadence reminder.
