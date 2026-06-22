@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "brief-matrix"
+version = "0.1.0"
+description = "Multi-tenant persona-conditioned weekly brief platform with calibration ledger."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "BriefMatrix maintainers" }]
+dependencies = [
+    "pyyaml>=6.0",
+    "jsonschema>=4.21",
+]
+
+[project.scripts]
+brief-matrix = "brief_matrix.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+]
+
+[tool.uv]
+package = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["brief_matrix"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brief-matrix.local/schemas/tenant.schema.json",
+  "title": "BriefMatrix Tenant Config",
+  "description": "Per-tenant configuration for the BriefMatrix runtime.",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "persona",
+    "source_registry",
+    "spec_ledger_ref",
+    "review_target"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*[a-z0-9]$",
+      "description": "Stable tenant slug; matches the directory name under tenants/."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "persona": {
+      "type": "string",
+      "minLength": 1,
+      "description": "One-sentence description of the reader."
+    },
+    "source_registry": {
+      "type": "string",
+      "description": "Path relative to the tenant directory."
+    },
+    "spec_ledger_ref": {
+      "type": "string",
+      "description": "Path relative to the tenant directory."
+    },
+    "voice_overrides": {
+      "type": "string",
+      "description": "Optional path to per-tenant voice overrides."
+    },
+    "review_target": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Where the publisher renders an approved brief."
+    }
+  }
+}

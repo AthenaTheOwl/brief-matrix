@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brief-matrix.local/schemas/calibration-run.schema.json",
+  "title": "BriefMatrix Calibration Run",
+  "description": "One row per scored brief. Append-only.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "tenant_id",
+    "iso_week",
+    "brief_path",
+    "created_at",
+    "voice_score",
+    "citation_score",
+    "section_score"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1
+    },
+    "tenant_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*[a-z0-9]$"
+    },
+    "iso_week": {
+      "type": "string",
+      "pattern": "^\\d{4}-W\\d{2}$"
+    },
+    "brief_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "voice_score": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "citation_score": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "section_score": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "voice_hits": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "sections_declared": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "sections_filled": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "notes": { "type": "string" },
+    "supersedes": { "type": "string" }
+  }
+}

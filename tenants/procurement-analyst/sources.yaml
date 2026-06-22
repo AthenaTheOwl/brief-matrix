@@ -1,0 +1,45 @@
+sources:
+  - id: ustr-tariff-notices
+    kind: primary-source-docket
+    title: USTR Federal Register tariff notices
+    url_template: https://www.federalregister.gov/agencies/office-of-the-united-states-trade-representative
+    cadence: weekly
+    fixture_items:
+      - title: Section 301 tariff exclusion process notice
+        url: https://example.invalid/ustr/section-301-2026-exclusion-notice
+        published_at: 2026-06-16
+        excerpt: >-
+          USTR opened a new exclusion request window for select Chinese
+          imports under Section 301, with a 30-day comment period.
+      - title: Generalized System of Preferences renewal docket
+        url: https://example.invalid/ustr/gsp-renewal-docket-2026
+        published_at: 2026-06-18
+        excerpt: >-
+          Comment docket opened on GSP renewal for the 2026 program year;
+          notable carve-out language for critical minerals.
+  - id: portwatch-bulletins
+    kind: trade-press
+    title: PortWatch weekly bulletin
+    url_template: https://example.invalid/portwatch/weekly
+    cadence: weekly
+    fixture_items:
+      - title: Long Beach dwell time week of June 15
+        url: https://example.invalid/portwatch/long-beach-week-25
+        published_at: 2026-06-19
+        excerpt: >-
+          Average container dwell time at Long Beach rose to 4.1 days from
+          3.6 the prior week; PortWatch attributes the lift to a ground-
+          handler staffing gap.
+  - id: supply-chain-academic-feed
+    kind: academic-feed
+    title: Production & Operations Management early-access feed
+    url_template: https://example.invalid/pom/early-access
+    cadence: monthly
+    fixture_items:
+      - title: Single-sourcing risk under tariff regime shifts
+        url: https://example.invalid/pom/single-sourcing-tariffs-2026
+        published_at: 2026-06-10
+        excerpt: >-
+          Working paper finds firms with single-source supplier
+          arrangements absorb 2.3x the cost shock of dual-sourced peers
+          when tariff regimes shift mid-contract.
