@@ -9,12 +9,18 @@ Streamlit Cloud.
 from __future__ import annotations
 
 import json
+import tempfile
 from pathlib import Path
 
 import streamlit as st
 
+from brief_matrix import score as score_engine
+from brief_matrix.loader import TenantError, load_tenant
+
 HERE = Path(__file__).resolve().parent
 LEDGER_DIR = HERE / "data" / "ledger"
+TENANTS_DIR = HERE / "tenants"
+SAMPLE_BRIEF = HERE / "review-queue" / "procurement-analyst" / "2026-W34.md"
 
 AXES = ("voice_score", "citation_score", "section_score")
 
@@ -103,3 +109,126 @@ with st.expander("what the axes mean"):
         "inline link.\n"
         "- **section**: share of the tenant's declared sections that are filled."
     )
+
+
+# ---------------------------------------------------------------------------
+# Score a brief yourself -- drives the real calibration engine live.
+#
+# This is not a lookup. The text below is written to a temp file and run
+# through brief_matrix.score.score(brief_path, tenant), the exact function
+# the `calibrate` CLI verb uses. Edit the brief, watch the three axes move.
+# ---------------------------------------------------------------------------
+st.divider()
+st.header("score a brief yourself")
+st.caption(
+    "paste or edit a brief below and run it through the real calibration "
+    "scorer (brief_matrix.score.score) against a live-loaded tenant spec. "
+    "this is the same engine the calibrate CLI verb uses -- not a lookup."
+)
+
+
+def available_tenants() -> list[str]:
+    if not TENANTS_DIR.is_dir():
+        return []
+    return sorted(p.name for p in TENANTS_DIR.iterdir() if (p / "config.yaml").is_file())
+
+
+def default_brief_text() -> str:
+    if SAMPLE_BRIEF.is_file():
+        return SAMPLE_BRIEF.read_text(encoding="utf-8")
+    return (
+        "## intro\n\nYour theme for the week.\n\n"
+        "## items\n\n1. An item with [a citation](https://example.invalid/x).\n\n"
+        "## what-this-means\n\nThe implication for the reader.\n\n"
+        "## footer\n\nSource roll-up ([roll-up](https://example.invalid/x)).\n"
+    )
+
+
+tenant_names = available_tenants()
+if not tenant_names:
+    st.warning("no tenant specs found under tenants/. cannot score live.")
+else:
+    sel_tenant = st.selectbox("tenant spec to score against", tenant_names)
+
+    try:
+        tenant = load_tenant(TENANTS_DIR / sel_tenant)
+    except TenantError as exc:  # malformed tenant dir
+        st.error(f"could not load tenant '{sel_tenant}': {exc}")
+        tenant = None
+
+    if tenant is not None:
+        st.caption(
+            f"declared sections: {', '.join(tenant.section_names)} -- "
+            "drop a heading, remove a citation, or paste a banned word "
+            "(e.g. 'leverage', 'synergy') to watch an axis collapse."
+        )
+        brief_text = st.text_area(
+            "brief markdown",
+            value=default_brief_text(),
+            height=360,
+            key="brief_text",
+        )
+
+        # Write the user's text to a temp file and call the REAL scorer.
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".md", delete=False, encoding="utf-8"
+        ) as fh:
+            fh.write(brief_text)
+            tmp_path = Path(fh.name)
+        try:
+            result = score_engine.score(tmp_path, tenant)
+        finally:
+            tmp_path.unlink(missing_ok=True)
+
+        composite_live = (
+            result.voice_score + result.citation_score + result.section_score
+        ) / 3.0
+
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("voice", f"{result.voice_score:.2f}")
+        m2.metric("citation", f"{result.citation_score:.2f}")
+        m3.metric("section", f"{result.section_score:.2f}")
+        m4.metric("mean", f"{composite_live:.2f}")
+
+        if result.voice_hits:
+            st.error(
+                "voice gate failed -- banned phrasing present: "
+                + ", ".join(f"`{h}`" for h in result.voice_hits)
+            )
+        else:
+            st.success("voice gate clean -- no banned phrasing.")
+
+        declared = set(result.sections_declared)
+        filled = set(result.sections_filled)
+        missing = [s for s in result.sections_declared if s not in filled]
+        if missing:
+            st.warning(
+                f"sections filled {len(filled)}/{len(declared)} -- missing: "
+                + ", ".join(f"`{s}`" for s in missing)
+            )
+        else:
+            st.info("all declared sections present.")
+
+        if result.citation_score < 1.0:
+            cite_required = [
+                s["name"]
+                for s in tenant.section_structure
+                if s.get("requires_citation", True)
+            ]
+            st.warning(
+                f"citation coverage {result.citation_score:.2f} -- "
+                f"sections that require an inline link: "
+                + ", ".join(f"`{s}`" for s in cite_required)
+            )
+
+        with st.expander("raw scorer output"):
+            st.json(
+                {
+                    "voice_score": result.voice_score,
+                    "citation_score": result.citation_score,
+                    "section_score": result.section_score,
+                    "voice_hits": result.voice_hits,
+                    "sections_declared": result.sections_declared,
+                    "sections_filled": result.sections_filled,
+                }
+            )
