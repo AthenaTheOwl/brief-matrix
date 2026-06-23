@@ -40,10 +40,8 @@ publisher.
 
 ## Status
 
-v0 scaffold; no implementation yet. The specs ledger names the first
-set of requirements (R-BM-001 through R-BM-010). The first PR after
-this scaffold lands the tenant schema and the per-tenant directory
-layout.
+
+v0.1 shipped — runnable, minimal. The first real deliverable is in place; the next passes deepen it (more scenarios, real-data backfill). The entry command `python -m brief_matrix validate` runs. See `specs/0002-design/` for the v0.1 scope and `STATUS.md` (where present) for the current state and next-feature queue.
 
 ## How to run
 
