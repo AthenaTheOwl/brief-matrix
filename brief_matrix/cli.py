@@ -69,6 +69,15 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Override the default data/ledger/ directory (used by tests).",
     )
 
+    p_show = sub.add_parser(
+        "show",
+        help="Read the committed ledger and print a ranked, readable rollup.",
+    )
+    p_show.add_argument(
+        "--path",
+        help="Override the default data/ledger/ directory (used by tests).",
+    )
+
     return parser
 
 
@@ -155,6 +164,70 @@ def cmd_ledger(args: argparse.Namespace) -> int:
     return 0
 
 
+def _axis_flag(value: float) -> str:
+    """A one-glyph read on an axis score."""
+    if value >= 0.999:
+        return "ok"
+    if value >= 0.5:
+        return "warn"
+    return "FAIL"
+
+
+def cmd_show(args: argparse.Namespace) -> int:
+    """Read the committed ledger and print a ranked, readable rollup."""
+    from brief_matrix import report
+
+    ledger_dir = Path(args.path) if args.path else None
+    rows = ledger.read_all(ledger_dir=ledger_dir)
+    if not rows:
+        print("show: ledger is empty -- run `calibrate` to score a brief first.")
+        return 0
+
+    ranked_rows = report.ranked(rows)
+
+    print("brief-matrix -- calibration rollup")
+    print(f"{len(rows)} scored brief(s) across "
+          f"{len({r['tenant_id'] for r in rows})} tenant(s)\n")
+
+    header = (
+        f"{'#':>2}  {'iso_week':<9}  {'tenant':<22}  "
+        f"{'voice':>6}  {'cit':>5}  {'sec':>5}  {'mean':>5}"
+    )
+    print(header)
+    print("-" * len(header))
+    for i, r in enumerate(ranked_rows, start=1):
+        mean = report.composite(r)
+        print(
+            f"{i:>2}  {r['iso_week']:<9}  {r['tenant_id']:<22}  "
+            f"{r['voice_score']:>6.2f}  {r['citation_score']:>5.2f}  "
+            f"{r['section_score']:>5.2f}  {mean:>5.2f}"
+        )
+
+    print()
+    top = ranked_rows[0]
+    top_mean = report.composite(top)
+    weak_axis, weak_val = min(
+        (
+            ("voice", top["voice_score"]),
+            ("citation", top["citation_score"]),
+            ("section", top["section_score"]),
+        ),
+        key=lambda kv: kv[1],
+    )
+    if top_mean >= 0.999:
+        print(
+            f"headline: {top['tenant_id']} {top['iso_week']} is clean on all "
+            f"three axes (voice/citation/section) -- ready to promote."
+        )
+    else:
+        print(
+            f"headline: top brief is {top['tenant_id']} {top['iso_week']} "
+            f"at {top_mean:.2f}; weakest axis is {weak_axis} "
+            f"({weak_val:.2f}, {_axis_flag(weak_val)})."
+        )
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -162,6 +235,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "validate": cmd_validate,
         "calibrate": cmd_calibrate,
         "ledger": cmd_ledger,
+        "show": cmd_show,
     }
     return handlers[args.command](args)
 

@@ -41,3 +41,25 @@ def summary(ledger_dir: Path | None = None) -> str:
     """Read the on-disk ledger and emit a Markdown table."""
     rows = ledger.read_all(ledger_dir=ledger_dir)
     return markdown_table(rows)
+
+
+def composite(row: dict[str, Any]) -> float:
+    """Mean of the three axis scores. The single number a row ranks on."""
+    return (
+        float(row["voice_score"])
+        + float(row["citation_score"])
+        + float(row["section_score"])
+    ) / 3.0
+
+
+def ranked(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Rows sorted by composite score, best first.
+
+    Ties break on iso_week (newer first) so a fresh clean brief outranks
+    an older one with the same scores.
+    """
+    return sorted(
+        rows,
+        key=lambda r: (composite(r), r.get("iso_week", "")),
+        reverse=True,
+    )

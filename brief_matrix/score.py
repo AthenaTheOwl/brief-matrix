@@ -55,21 +55,32 @@ def _sections_filled(body: str, declared: list[str]) -> list[str]:
     return filled
 
 
-def _citations_per_section(body: str, declared: list[str]) -> tuple[int, int]:
-    """Return (sections_with_at_least_one_citation, total_declared)."""
+def _split_by_heading(body: str) -> dict[str, str]:
+    """Map lowercased H2 heading -> the text under it (until the next H2)."""
     parts = re.split(r"^##\s+", body, flags=re.MULTILINE)
     by_heading: dict[str, str] = {}
     for chunk in parts[1:]:
         head, _, rest = chunk.partition("\n")
         by_heading[head.strip().lower()] = rest
+    return by_heading
 
-    declared_lower = [d.lower() for d in declared]
+
+def _citations_per_section(
+    body: str, cite_required: list[str]
+) -> tuple[int, int]:
+    """Citation coverage over the sections that *require* a citation.
+
+    Returns (sections_with_at_least_one_citation, sections_that_require_one).
+    Narrative sections (intro, what-this-means) are not in ``cite_required``
+    and so do not drag the score down for carrying no link.
+    """
+    by_heading = _split_by_heading(body)
     cited = 0
-    for d in declared_lower:
-        section_body = by_heading.get(d, "")
+    for name in cite_required:
+        section_body = by_heading.get(name.lower(), "")
         if INLINE_LINK_RE.search(section_body):
             cited += 1
-    return cited, len(declared)
+    return cited, len(cite_required)
 
 
 def score(brief_path: str | Path, tenant: Tenant) -> CalibrationResult:
@@ -83,11 +94,19 @@ def score(brief_path: str | Path, tenant: Tenant) -> CalibrationResult:
     filled = _sections_filled(body, declared)
     section_score = (len(filled) / len(declared)) if declared else 0.0
 
-    cited_count, declared_count = _citations_per_section(body, declared)
-    if declared_count == 0 or not INLINE_LINK_RE.search(body):
+    # Only sections that the spec marks `requires_citation: true` count
+    # toward citation coverage. If the spec is silent (older fixtures
+    # with no flags) every section is required, preserving prior behaviour.
+    cite_required = [
+        s["name"]
+        for s in tenant.section_structure
+        if s.get("requires_citation", True)
+    ]
+    cited_count, required_count = _citations_per_section(body, cite_required)
+    if required_count == 0 or not INLINE_LINK_RE.search(body):
         citation_score = 0.0
     else:
-        citation_score = cited_count / declared_count
+        citation_score = cited_count / required_count
 
     return CalibrationResult(
         voice_score=voice_score,

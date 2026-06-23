@@ -45,6 +45,62 @@ def test_ledger_prints_checked_in_rows(capsys, repo_root):
     assert "procurement-analyst" in out
 
 
+def test_show_reads_committed_ledger(capsys, repo_root):
+    rc = cli.main(["show", "--path", str(repo_root / "data" / "ledger")])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "calibration rollup" in out
+    assert "procurement-analyst" in out
+    assert "headline:" in out
+    # The committed row is clean on all axes.
+    assert "ready to promote" in out
+
+
+def test_show_ranks_best_first(capsys, tmp_path):
+    from brief_matrix import ledger
+
+    led = tmp_path / "ledger"
+    led.mkdir()
+    rows = [
+        {
+            "schema_version": 1,
+            "tenant_id": "weak-tenant",
+            "iso_week": "2026-W10",
+            "brief_path": "x/weak.md",
+            "created_at": "2026-03-01T00:00:00+00:00",
+            "voice_score": 0.0,
+            "citation_score": 0.5,
+            "section_score": 0.5,
+        },
+        {
+            "schema_version": 1,
+            "tenant_id": "strong-tenant",
+            "iso_week": "2026-W11",
+            "brief_path": "x/strong.md",
+            "created_at": "2026-03-08T00:00:00+00:00",
+            "voice_score": 1.0,
+            "citation_score": 1.0,
+            "section_score": 1.0,
+        },
+    ]
+    for r in rows:
+        ledger.append(r, ledger_dir=led)
+
+    rc = cli.main(["show", "--path", str(led)])
+    assert rc == 0
+    out = capsys.readouterr().out
+    # strong-tenant must rank #1 (appear before weak-tenant in the table).
+    assert out.index("strong-tenant") < out.index("weak-tenant")
+    assert "strong-tenant 2026-W11" in out  # headline names the top brief
+
+
+def test_show_empty_ledger(capsys, tmp_path):
+    rc = cli.main(["show", "--path", str(tmp_path / "empty")])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "empty" in out
+
+
 def test_calibrate_writes_to_temp_ledger(
     tmp_path, procurement_tenant_dir, fixture_brief, monkeypatch
 ):

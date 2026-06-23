@@ -41,49 +41,76 @@ publisher.
 ## Status
 
 
-v0.1 shipped — runnable, minimal. The first real deliverable is in place; the next passes deepen it (more scenarios, real-data backfill). The entry command `python -m brief_matrix validate` runs. See `specs/0002-design/` for the v0.1 scope and `STATUS.md` (where present) for the current state and next-feature queue.
+v0.1 shipped -- runnable, minimal. The scorer, loader, voice gate,
+calibration ledger, and CLI (`validate` / `calibrate` / `ledger` /
+`show`) are real and tested; one procurement-analyst tenant and one
+scored row ship as fixtures. The three-axis scorer (voice, citation,
+section) is the core deliverable. Next passes deepen it: a second
+tenant fixture for multi-tenant isolation, real-data backfill. See
+`STATUS.md` for the next-feature queue.
 
 ## How to run
 
-Placeholder; will land in spec 0002. v0 ships the tenant schema, the
-per-tenant directory layout, and one example tenant (a procurement /
-supply-chain analyst) as a checked-in fixture. No runtime is required
-to read the artifact.
-
-The eventual CLI shape (target for spec 0003):
+The CLI scores briefs and keeps a calibration ledger. Nothing here
+reaches the network; the bundled procurement-analyst tenant and one
+scored row ship as checked-in fixtures.
 
 ```
-python -m brief_matrix generate --tenant tenants/procurement-analyst --week 2026-W34
-python -m brief_matrix review --tenant tenants/procurement-analyst --week 2026-W34
+python -m brief_matrix validate                         # check the tenant config
+python -m brief_matrix calibrate \                       # score a brief, append a ledger row
+  --tenant tenants/procurement-analyst \
+  --brief review-queue/procurement-analyst/2026-W34.md
+python -m brief_matrix ledger                            # print every ledger row
+python -m brief_matrix show                              # ranked, readable rollup
 ```
+
+`show` reads the committed ledger and prints the rows ranked by their
+mean score, plus a one-line headline on the top brief:
+
+```
+brief-matrix -- calibration rollup
+1 scored brief(s) across 1 tenant(s)
+
+ #  iso_week   tenant                   voice    cit    sec   mean
+------------------------------------------------------------------
+ 1  2026-W25   procurement-analyst       1.00   1.00   1.00   1.00
+
+headline: procurement-analyst 2026-W25 is clean on all three axes
+(voice/citation/section) -- ready to promote.
+```
+
+## live demo
+
+A read-only Streamlit page renders the same calibration rollup as an
+interactive browser: pick a tenant, see the ranked table, the three
+axis scores, and a headline on the top brief.
+
+Run it locally:
+
+```
+python -m uv run --with streamlit streamlit run streamlit_app.py
+# or, with a plain venv:
+pip install -r requirements.txt && streamlit run streamlit_app.py
+```
+
+Deploy on Streamlit Cloud: repo `AthenaTheOwl/brief-matrix`, branch
+`main`, main file `streamlit_app.py`.
+
+<!-- live-url: (paste the Streamlit Cloud URL here once deployed) -->
 
 ## Layout
 
 ```
 brief-matrix/
-  README.md
-  LICENSE
-  AGENTS.md
-  .gitignore
-  specs/
-    0001-foundation/
-      requirements.md
-      design.md
-      tasks.md
-      acceptance.md
-  docs/
-    first-pr.md
+  brief_matrix/            multi-tenant runtime (loader, scorer, voice gate, ledger, cli)
+    fetchers/              one module per source class (fixture fetcher today)
+  tenants/<tenant-id>/     per-tenant config, source registry, spec ledger, voice overrides
+  review-queue/<tenant-id>/  drafts awaiting a score
+  data/ledger/             append-only calibration rows (one .jsonl per iso-week + tenant)
+  schemas/                 tenant, brief, review-record, calibration-run schemas
+  streamlit_app.py         read-only calibration browser
+  tests/                   pytest suite
 ```
-
-Future directories (named in specs, not created yet):
-
-- `src/brief_matrix/` — multi-tenant runtime
-- `src/brief_matrix/fetchers/` — one module per source class
-- `tenants/<tenant-id>/` — per-tenant config, spec ledger, voice
-  overrides
-- `briefs/<tenant-id>/<year>-W<nn>.md` — published briefs
-- `review-queue/<tenant-id>/` — pending drafts awaiting approval
-- `schemas/` — tenant, brief, review-record schemas
 
 ## License
 
