@@ -1,59 +1,38 @@
-# BriefMatrix
+# brief-matrix
 
-Multi-tenant, persona-conditioned weekly brief platform. Any niche topic, any audience, with the same spec-driven structure, voice discipline, citation-faithfulness, and review-queue promotion shipped in ai-field-brief.
+One tenant, one brief, one calibration row: procurement-analyst 2026-W25, scoring
+1.00 on voice, 1.00 on citation, 1.00 on section. A clean sheet. The interesting
+question is what happens when the second tenant shows up and the sheet stops being
+clean.
 
-## What this is
+## What it does
 
-ai-field-brief is the live single-tenant reference. BriefMatrix is the
-shape that pattern takes when more than one persona uses it. The four
-shipped control planes (spec ledger, voice-lint banlist, citation-
-faithfulness check, review-queue promotion) become per-tenant
-configuration; the brief-generation runtime is shared.
+A weekly brief is easy to write and easy to let rot. The first one cites its
+sources; the tenth quietly stops. brief-matrix is the runtime that refuses to let
+that happen across more than one publisher at a time. A brief here is a typed
+artifact with a spec ledger naming its sections, a fetcher per source pulling
+candidates, a synthesizer drafting with explicit citations, a voice gate that
+rejects banned phrasing, and a review queue that holds the draft until a human signs
+off.
 
-A "brief" here is a typed artifact, not a Substack post:
+[ai-field-brief](https://github.com/AthenaTheOwl/ai-field-brief) is the live
+single-tenant version of that loop. brief-matrix is the shape it takes when the loop
+has to run for N tenants out of one repo. The four control planes — spec ledger,
+voice banlist, citation check, review-queue promotion — become per-tenant
+configuration; the generation runtime is shared. Removing a shared banned term from
+a tenant's override file is rejected, so a publisher can add discipline but not opt
+out of it.
 
-- spec ledger names the structure of the brief
-- a fetcher per source pulls candidate items
-- a synthesizer drafts the brief with explicit citations
-- voice-lint refuses the draft if it carries banned phrasing
-- the review queue holds the draft until a human approves
+The three-axis scorer is the core of it: every draft gets scored on voice, citation
+coverage, and section conformance, and the result lands as an append-only row in the
+ledger. v0.1 ships one procurement-analyst tenant and one scored row. The scorer is
+the point; the data adapter is a fixture fetcher.
 
-BriefMatrix is the platform layer that runs this loop for N tenants in
-one repo, with one shared infrastructure and N tenant-isolated
-configurations.
+## Try it
 
-## Who uses it
-
-Newsletter publishers who want spec-driven brief discipline instead of
-ad-hoc summarization. In-house analyst teams at financial firms that
-need a citable weekly artifact. Niche-community moderators who want a
-brief that does not drift into hype. Industry trade associations.
-University research-group communications leads.
-
-## Why now
-
-The newsletter market is saturating on undifferentiated AI summarization.
-The spec-driven, voice-gated brief is a recognizable shape. The
-ai-field-brief stack ships the discipline; BriefMatrix turns it into a
-multi-tenant primitive so the discipline does not get reinvented per
-publisher.
-
-## Status
-
-
-v0.1 shipped -- runnable, minimal. The scorer, loader, voice gate,
-calibration ledger, and CLI (`validate` / `calibrate` / `ledger` /
-`show`) are real and tested; one procurement-analyst tenant and one
-scored row ship as fixtures. The three-axis scorer (voice, citation,
-section) is the core deliverable. Next passes deepen it: a second
-tenant fixture for multi-tenant isolation, real-data backfill. See
-`STATUS.md` for the next-feature queue.
-
-## How to run
-
-The CLI scores briefs and keeps a calibration ledger. Nothing here
-reaches the network; the bundled procurement-analyst tenant and one
-scored row ship as checked-in fixtures.
+The CLI scores briefs and keeps a calibration ledger. Nothing reaches the network;
+the bundled procurement-analyst tenant and one scored row ship as checked-in
+fixtures.
 
 ```
 python -m brief_matrix validate                         # check the tenant config
@@ -64,8 +43,8 @@ python -m brief_matrix ledger                            # print every ledger ro
 python -m brief_matrix show                              # ranked, readable rollup
 ```
 
-`show` reads the committed ledger and prints the rows ranked by their
-mean score, plus a one-line headline on the top brief:
+`show` reads the committed ledger and prints the rows ranked by their mean score,
+plus a one-line headline on the top brief:
 
 ```
 brief-matrix -- calibration rollup
@@ -79,11 +58,14 @@ headline: procurement-analyst 2026-W25 is clean on all three axes
 (voice/citation/section) -- ready to promote.
 ```
 
-## live demo
+A brief at 1.00/1.00/1.00 promotes. A brief that slipped on any axis sits in the
+review queue until someone fixes it.
 
-A read-only Streamlit page renders the same calibration rollup as an
-interactive browser: pick a tenant, see the ranked table, the three
-axis scores, and a headline on the top brief.
+## Live demo
+
+A read-only Streamlit page renders the same calibration rollup as an interactive
+browser: pick a tenant, see the ranked table, the three axis scores, and a headline
+on the top brief.
 
 Run it locally:
 
@@ -93,10 +75,16 @@ python -m uv run --with streamlit streamlit run streamlit_app.py
 pip install -r requirements.txt && streamlit run streamlit_app.py
 ```
 
-Deploy on Streamlit Cloud: repo `AthenaTheOwl/brief-matrix`, branch
-`main`, main file `streamlit_app.py`.
+Deploy on Streamlit Cloud: repo `AthenaTheOwl/brief-matrix`, branch `main`, main
+file `streamlit_app.py`.
 
 <!-- live-url: (paste the Streamlit Cloud URL here once deployed) -->
+
+## How it connects
+
+- [ai-field-brief](https://github.com/AthenaTheOwl/ai-field-brief) — the live
+  single-tenant reference. It ships the discipline; brief-matrix turns it into a
+  multi-tenant primitive so the discipline doesn't get reinvented per publisher.
 
 ## Layout
 
@@ -115,3 +103,5 @@ brief-matrix/
 ## License
 
 MIT. See [LICENSE](LICENSE).
+</content>
+</invoke>
