@@ -40,7 +40,12 @@ def _load_yaml(path: Path) -> Any:
     if not path.exists():
         raise TenantError(f"missing required file: {path}")
     with path.open("r", encoding="utf-8") as fh:
-        return yaml.safe_load(fh)
+        try:
+            return yaml.safe_load(fh)
+        except yaml.YAMLError as exc:
+            # Surface a file-named TenantError instead of a raw scanner/parser
+            # trace so cmd_validate can report it as a clean FAIL.
+            raise TenantError(f"{path}: invalid YAML: {exc}") from exc
 
 
 def _load_schema(name: str) -> dict[str, Any]:

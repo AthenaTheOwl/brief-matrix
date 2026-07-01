@@ -52,11 +52,18 @@ def read_all(*, ledger_dir: Path | None = None) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for path in sorted(target_dir.glob("*.jsonl")):
         with path.open("r", encoding="utf-8") as fh:
-            for line in fh:
+            for lineno, line in enumerate(fh, start=1):
                 line = line.strip()
                 if not line:
                     continue
-                row = json.loads(line)
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError as exc:
+                    # A corrupt line in an append-only ledger names its own
+                    # location, mirroring the schema-validation error below.
+                    raise ValueError(
+                        f"{path}: line {lineno}: not valid JSON: {exc}"
+                    ) from exc
                 errors = validate_row(row)
                 if errors:
                     raise ValueError(
