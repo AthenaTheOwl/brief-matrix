@@ -50,6 +50,40 @@ def test_score_no_citations_collapses_citation_score(tmp_path, procurement_tenan
     assert result.citation_score == 0.0
 
 
+def test_partial_citation_coverage_is_half(tmp_path, procurement_tenant_dir):
+    # The tenant marks exactly `items` and `footer` as requires_citation.
+    # Cite one of the two -> cited_count/required_count == 1/2. Pins the
+    # ratio so it can't be flattened to a hardcoded 1.0.
+    tenant = load_tenant(procurement_tenant_dir)
+    brief = tmp_path / "partial-cite.md"
+    brief.write_text(
+        "## intro\n\nTheme paragraph.\n\n"
+        "## items\n\nAn item with [a link](https://example.invalid/x).\n\n"
+        "## what-this-means\n\nImplication.\n\n"
+        "## footer\n\nRoll-up with no link.\n",
+        encoding="utf-8",
+    )
+    result = calibrate.score(brief, tenant)
+    assert result.citation_score == 0.5
+
+
+def test_voice_violation_zeroes_voice_score(tmp_path, procurement_tenant_dir):
+    # A banned term drives voice.passed False, which pins the else-0.0 branch
+    # of voice_score (the 1.0 branch is covered by the clean fixture).
+    tenant = load_tenant(procurement_tenant_dir)
+    brief = tmp_path / "voice-fail.md"
+    brief.write_text(
+        "## intro\n\nWe must leverage the new tariff window this week.\n\n"
+        "## items\n\nAn item with [a link](https://example.invalid/x).\n\n"
+        "## what-this-means\n\nImplication.\n\n"
+        "## footer\n\nRoll-up ([src](https://example.invalid/y)).\n",
+        encoding="utf-8",
+    )
+    result = calibrate.score(brief, tenant)
+    assert result.voice_score == 0.0
+    assert result.voice_hits  # non-empty; names the banned term
+
+
 def test_make_row_includes_required_fields(procurement_tenant_dir, fixture_brief):
     tenant = load_tenant(procurement_tenant_dir)
     result = calibrate.score(fixture_brief, tenant)

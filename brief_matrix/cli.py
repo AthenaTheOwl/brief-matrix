@@ -117,7 +117,9 @@ def cmd_calibrate(args: argparse.Namespace) -> int:
         return 1
 
     brief_path = Path(args.brief)
-    if not brief_path.exists():
+    # is_file (not exists) so a directory or special file fails cleanly here
+    # rather than surfacing IsADirectoryError/PermissionError from read_text().
+    if not brief_path.is_file():
         print(f"calibrate: FAIL  brief not found: {brief_path}", file=sys.stderr)
         return 1
 
@@ -155,7 +157,12 @@ def cmd_calibrate(args: argparse.Namespace) -> int:
 
 def cmd_ledger(args: argparse.Namespace) -> int:
     ledger_dir = Path(args.path) if args.path else None
-    rows = ledger.read_all(ledger_dir=ledger_dir)
+    try:
+        rows = ledger.read_all(ledger_dir=ledger_dir)
+    except ValueError as exc:
+        # A corrupt or schema-invalid ledger line names its file and line.
+        print(f"ledger: FAIL\n{exc}", file=sys.stderr)
+        return 1
     if not rows:
         print("ledger: (empty)")
         return 0
@@ -178,7 +185,11 @@ def cmd_show(args: argparse.Namespace) -> int:
     from brief_matrix import report
 
     ledger_dir = Path(args.path) if args.path else None
-    rows = ledger.read_all(ledger_dir=ledger_dir)
+    try:
+        rows = ledger.read_all(ledger_dir=ledger_dir)
+    except ValueError as exc:
+        print(f"show: FAIL\n{exc}", file=sys.stderr)
+        return 1
     if not rows:
         print("show: ledger is empty -- run `calibrate` to score a brief first.")
         return 0
