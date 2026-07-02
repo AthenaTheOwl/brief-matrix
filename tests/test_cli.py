@@ -94,6 +94,70 @@ def test_show_ranks_best_first(capsys, tmp_path):
     assert "strong-tenant 2026-W11" in out  # headline names the top brief
 
 
+def test_calibrate_brief_is_directory(capsys, procurement_tenant_dir):
+    # A directory passed as --brief must fail cleanly, not raise
+    # IsADirectoryError/PermissionError out of score().
+    rc = cli.main(
+        [
+            "calibrate",
+            "--tenant",
+            str(procurement_tenant_dir),
+            "--brief",
+            str(procurement_tenant_dir),
+            "--iso-week",
+            "2026-W25",
+            "--dry-run",
+        ]
+    )
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "calibrate: FAIL" in err
+    assert "brief not found" in err
+
+
+def test_validate_malformed_yaml(capsys, tmp_path):
+    # A malformed config.yaml must surface as a clean FAIL, not a raw
+    # yaml.scanner.ScannerError trace.
+    tenant_dir = tmp_path / "broken"
+    tenant_dir.mkdir()
+    (tenant_dir / "config.yaml").write_text(
+        "id: broken\nname: [unclosed\n  bracket: yes\n", encoding="utf-8"
+    )
+    rc = cli.main(["validate", "--tenant", str(tenant_dir)])
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "validate: FAIL" in err
+    assert "invalid YAML" in err
+
+
+def test_ledger_corrupt_line(capsys, tmp_path):
+    # A corrupt append-only ledger line must fail cleanly, not raise
+    # json.decoder.JSONDecodeError.
+    led = tmp_path / "ledger"
+    led.mkdir()
+    (led / "2026-W01-x-calibration-run.jsonl").write_text(
+        "{ not valid json }\n", encoding="utf-8"
+    )
+    rc = cli.main(["ledger", "--path", str(led)])
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "ledger: FAIL" in err
+    assert "not valid JSON" in err
+
+
+def test_show_corrupt_line(capsys, tmp_path):
+    led = tmp_path / "ledger"
+    led.mkdir()
+    (led / "2026-W01-x-calibration-run.jsonl").write_text(
+        "{ not valid json }\n", encoding="utf-8"
+    )
+    rc = cli.main(["show", "--path", str(led)])
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "show: FAIL" in err
+    assert "not valid JSON" in err
+
+
 def test_show_empty_ledger(capsys, tmp_path):
     rc = cli.main(["show", "--path", str(tmp_path / "empty")])
     assert rc == 0

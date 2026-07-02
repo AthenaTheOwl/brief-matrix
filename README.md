@@ -103,5 +103,3 @@ brief-matrix/
 ## License
 
 MIT. See [LICENSE](LICENSE).
-</content>
-</invoke>
