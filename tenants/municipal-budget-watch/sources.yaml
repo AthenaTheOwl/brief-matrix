@@ -1,0 +1,25 @@
+sources:
+  - id: council-agenda
+    kind: public-meeting-agenda
+    title: City council agenda packets
+    url_template: https://example.invalid/council/agendas
+    cadence: weekly
+    fixture_items:
+      - title: Capital projects carry-forward request
+        url: https://example.invalid/council/capital-carry-forward
+        published_at: 2026-06-18
+        excerpt: >-
+          Staff asked council to carry forward unspent stormwater funds
+          into the next fiscal year.
+  - id: bond-calendar
+    kind: municipal-disclosure
+    title: Bond calendar notices
+    url_template: https://example.invalid/muni/bond-calendar
+    cadence: weekly
+    fixture_items:
+      - title: Water revenue bond pricing notice
+        url: https://example.invalid/muni/water-revenue-bond
+        published_at: 2026-06-19
+        excerpt: >-
+          Water revenue bonds priced with a higher debt-service schedule
+          than the prior preliminary plan.

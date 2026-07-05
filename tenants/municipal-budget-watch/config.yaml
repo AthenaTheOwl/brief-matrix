@@ -1,0 +1,9 @@
+id: municipal-budget-watch
+name: Municipal Budget Watch
+persona: >-
+  A city budget analyst tracking bond calendars, grant expirations, and
+  department overruns before they become council surprises.
+source_registry: sources.yaml
+spec_ledger_ref: specs/
+voice_overrides: voice_overrides.yaml
+review_target: file://briefs/municipal-budget-watch/

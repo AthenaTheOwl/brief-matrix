@@ -1,6 +1,5 @@
 import json
 
-import pytest
 
 from brief_matrix import cli
 
