@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
-from brief_matrix import ledger, score as score_mod
+from brief_matrix import ledger, promote as promote_mod, score as score_mod
 from brief_matrix.loader import TenantError, load_tenant
 
 
@@ -62,6 +62,12 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Print the row without writing to data/ledger/.",
     )
     p_calibrate.add_argument("--notes", help="Optional note recorded on the row.")
+
+    p_promote = sub.add_parser("promote", help="Promote a pending review draft into briefs/.")
+    p_promote.add_argument("--tenant", required=True, help="Path to tenant dir.")
+    p_promote.add_argument("--brief", required=True, help="Path to review-queue draft markdown.")
+    p_promote.add_argument("--reviewer", required=True, help="Human reviewer id recorded in the review ledger.")
+    p_promote.add_argument("--notes", help="Optional note recorded on calibration and review rows.")
 
     p_ledger = sub.add_parser("ledger", help="Print all ledger rows.")
     p_ledger.add_argument(
@@ -151,6 +157,25 @@ def cmd_calibrate(args: argparse.Namespace) -> int:
         f"calibrate: OK  voice={result.voice_score:.2f}  "
         f"cit={result.citation_score:.2f}  sec={result.section_score:.2f}  "
         f"wrote={out}"
+    )
+    return 0
+
+
+def cmd_promote(args: argparse.Namespace) -> int:
+    try:
+        result = promote_mod.promote_brief(
+            tenant_dir=args.tenant,
+            brief_path=args.brief,
+            reviewer=args.reviewer,
+            notes=args.notes,
+        )
+    except (TenantError, promote_mod.PromoteError, ValueError, OSError) as exc:
+        print(f"promote: FAIL\n{exc}", file=sys.stderr)
+        return 1
+    print(
+        f"promote: OK  tenant={result.tenant_id}  iso_week={result.iso_week}  "
+        f"brief={result.destination}  calibration={result.calibration_path}  "
+        f"review={result.review_record_path}"
     )
     return 0
 
@@ -245,6 +270,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     handlers = {
         "validate": cmd_validate,
         "calibrate": cmd_calibrate,
+        "promote": cmd_promote,
         "ledger": cmd_ledger,
         "show": cmd_show,
     }

@@ -9,13 +9,15 @@ file is the contract between the runtime and whoever picks it up next.
   `python -m brief_matrix calibrate`, and `python -m brief_matrix ledger`.
 - The runtime package lives at top-level `brief_matrix/` with modules
   `cli.py`, `loader.py`, `voice_gate.py`, `score.py`, `calibrate.py`
-  (compat alias for `score`), `ledger.py`, and `report.py`.
+  (compat alias for `score`), `ledger.py`, `promote.py`, and
+  `report.py`.
 - Tenant schema, brief schema, review-record schema, and
   calibration-run schema all land under `schemas/` as draft 2020-12
   JSON Schema documents.
-- One example tenant, `procurement-analyst`, ships with a config, a
-  fixture source registry, a section structure, and an empty voice
-  override file. It validates against the tenant schema.
+- Two example tenants ship: `procurement-analyst` and
+  `municipal-budget-watch`. Their section structures and voice
+  overrides diverge, and tests assert tenant overrides do not bleed
+  across tenants.
 - The voice gate (`brief_matrix/voice_gate.py`) wraps a shared
   banlist (`BANNED_FAIL`) plus per-tenant additive overrides.
   Removing a shared term from an override file is rejected.
@@ -48,12 +50,13 @@ file is the contract between the runtime and whoever picks it up next.
   fixture candidates so the rest of the loop has something to
   score, but it does not call an LLM. Real synthesis lands in
   spec 0003.
-- The review queue is a directory of Markdown files. There is no
-  UI; approval is a manual `git mv` from `review-queue/` to
-  `briefs/`.
-- Only one tenant ships. Multi-tenant scale (loader isolation under
-  load, per-tenant secret scoping) is named in 0001 but not
-  exercised beyond directory boundaries.
+- The review queue is a directory of Markdown files. Promotion is a
+  CLI action that moves one approved draft into `briefs/`, writes a
+  calibration row, and records the review transition. There is no
+  approval UI.
+- Two tenants ship. Multi-tenant load and per-tenant secret scoping
+  are still out of v0.1 scope, but loader isolation and additive voice
+  overrides are covered by tests.
 - Citation-faithfulness is checked structurally — every cited claim
   has a `source_url` and an `inline_claim` — but the URL is not
   fetched. The semantic check (does the source actually support
@@ -64,9 +67,8 @@ file is the contract between the runtime and whoever picks it up next.
 
 ## Next feature queue
 
-- Add a second tenant (suggest: independent-municipal-budget-watch)
-  to force the loader to handle tenant isolation under real
-  divergence in section structure and voice overrides.
+- Add a third tenant with a different cadence and a non-weekly
+  section structure to test paths beyond Friday weekly briefs.
 - Implement `scripts/citation_faithfulness.py` to fetch each cited
   URL and check the inline claim against the page text. Pair it
   with a new calibration axis and bump the calibration-run schema
@@ -74,10 +76,9 @@ file is the contract between the runtime and whoever picks it up next.
 - Replace the synthesizer stub with a real LLM-backed drafter that
   fills the tenant's declared section structure from candidate
   items and emits inline citations.
-- Add a `python -m brief_matrix promote` command that moves an
-  approved draft from `review-queue/` to `briefs/`, re-runs voice
-  lint and calibration on the moved file, and appends a
-  review-record row.
+- Add a rejection workflow that records a review row without moving
+  the draft, so rejected briefs have the same audit shape as
+  promoted briefs.
 - Wire `brief_matrix.report` into a `ledger summary` subcommand so
   the cross-tenant Markdown table is reachable from the CLI.
 

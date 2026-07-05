@@ -1,0 +1,10 @@
+sections:
+  - name: agenda-risk
+    description: One paragraph naming the budget item most likely to surprise council.
+    requires_citation: true
+  - name: cash-impact
+    description: One paragraph translating the item into cash timing.
+    requires_citation: true
+  - name: next-check
+    description: One sentence naming the next document to watch.
+    requires_citation: false
