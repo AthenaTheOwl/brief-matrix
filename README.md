@@ -1,9 +1,10 @@
 # brief-matrix
 
-One tenant, one brief, one calibration row: procurement-analyst 2026-W25, scoring
-1.00 on voice, 1.00 on citation, 1.00 on section. A clean sheet. The interesting
-question is what happens when the second tenant shows up and the sheet stops being
-clean.
+Two tenant rulebooks now share one scorer without sharing one another's escape
+hatches. Procurement analysis and municipal budget monitoring carry different sections
+and vocabulary, while the shared banlist remains a floor neither tenant can weaken.
+The calibration ledger still has one scored brief, so the next useful evidence is a
+municipal row rather than another configuration file.
 
 ## What it does
 
@@ -25,20 +26,26 @@ out of it.
 
 The three-axis scorer is the core of it: every draft gets scored on voice, citation
 coverage, and section conformance, and the result lands as an append-only row in the
-ledger. v0.1 ships one procurement-analyst tenant and one scored row. The scorer is
-the point; the data adapter is a fixture fetcher.
+ledger. v0.1 ships procurement-analyst and municipal-budget-watch tenant contracts,
+plus one scored procurement row. An isolation test proves one tenant's overrides cannot
+weaken the other's banlist. The data adapter remains a fixture fetcher.
 
 ## Try it
 
-The CLI scores briefs and keeps a calibration ledger. Nothing reaches the network;
-the bundled procurement-analyst tenant and one scored row ship as checked-in
-fixtures.
+The CLI validates both tenant contracts, scores drafts, records human promotion, and
+keeps a calibration ledger. Nothing reaches the network; the tenant rules and the first
+procurement calibration row are checked-in fixtures.
 
 ```
-python -m brief_matrix validate                         # check the tenant config
+python -m brief_matrix validate --tenant tenants/procurement-analyst
+python -m brief_matrix validate --tenant tenants/municipal-budget-watch
 python -m brief_matrix calibrate \                       # score a brief, append a ledger row
   --tenant tenants/procurement-analyst \
   --brief review-queue/procurement-analyst/2026-W34.md
+python -m brief_matrix promote \                         # record the human decision
+  --tenant tenants/procurement-analyst \
+  --brief review-queue/procurement-analyst/2026-W34.md \
+  --reviewer reviewer-id
 python -m brief_matrix ledger                            # print every ledger row
 python -m brief_matrix show                              # ranked, readable rollup
 ```
@@ -58,8 +65,9 @@ headline: procurement-analyst 2026-W25 is clean on all three axes
 (voice/citation/section) -- ready to promote.
 ```
 
-A brief at 1.00/1.00/1.00 promotes. A brief that slipped on any axis sits in the
-review queue until someone fixes it.
+A brief at 1.00/1.00/1.00 is eligible for promotion; the promote command records
+who accepted it and appends the review decision exactly once. A brief that slipped on
+any axis stays in the review queue until someone fixes and recalibrates it.
 
 ## Live demo
 
