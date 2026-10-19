@@ -8,6 +8,9 @@ municipal row rather than another configuration file.
 
 ## What it does
 
+Section coverage requires reader-facing content below each required heading.
+An empty heading or an editorial comment does not complete the section.
+
 A weekly brief is easy to write and easy to let rot. The first one cites its
 sources; the tenth quietly stops. brief-matrix is the runtime that refuses to let
 that happen across more than one publisher at a time. A brief here is a typed

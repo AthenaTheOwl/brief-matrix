@@ -36,6 +36,31 @@ def test_score_missing_section_lowers_section_score(tmp_path, procurement_tenant
     assert result.voice_score == 1.0
 
 
+def test_empty_section_headings_do_not_count_as_filled(tmp_path, procurement_tenant_dir):
+    tenant = load_tenant(procurement_tenant_dir)
+    brief = tmp_path / "empty-sections.md"
+    brief.write_text(
+        "## intro\n\n## items\n\n## what-this-means\n\n## footer\n",
+        encoding="utf-8",
+    )
+    result = calibrate.score(brief, tenant)
+    assert result.sections_filled == []
+    assert result.section_score == 0.0
+
+
+def test_editorial_comments_do_not_complete_a_section(tmp_path, procurement_tenant_dir):
+    tenant = load_tenant(procurement_tenant_dir)
+    brief = tmp_path / "comments.md"
+    brief.write_text(
+        "## intro\n\n<!-- Draft this later. -->\n\n"
+        "## items\n\nA sourced item [reference](https://example.invalid/x).\n",
+        encoding="utf-8",
+    )
+    result = calibrate.score(brief, tenant)
+    assert result.sections_filled == ["items"]
+    assert result.section_score == 0.25
+
+
 def test_score_no_citations_collapses_citation_score(tmp_path, procurement_tenant_dir):
     tenant = load_tenant(procurement_tenant_dir)
     brief = tmp_path / "nocite.md"
@@ -97,3 +122,14 @@ def test_make_row_includes_required_fields(procurement_tenant_dir, fixture_brief
     assert row["tenant_id"] == "procurement-analyst"
     assert row["iso_week"] == "2026-W34"
     assert 0.0 <= row["voice_score"] <= 1.0
+def test_hidden_comment_heading_is_not_a_filled_section():
+    from brief_matrix.score import _sections_filled
+
+    draft = "<!--\n## intro\nDraft only, invisible when rendered.\n-->\n"
+    assert _sections_filled(draft, ["intro"]) == []
+
+
+def test_reference_definition_alone_is_not_a_filled_section():
+    from brief_matrix.score import _sections_filled
+
+    assert _sections_filled("## intro\n[ref]: https://example.invalid/x\n", ["intro"]) == []
