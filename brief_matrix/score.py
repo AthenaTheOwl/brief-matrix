@@ -47,16 +47,21 @@ def _strip_front_matter(text: str) -> tuple[str, dict[str, Any]]:
 
 
 def _sections_filled(body: str, declared: list[str]) -> list[str]:
-    headings = [h.strip().lower() for h in H2_RE.findall(body)]
+    sections = _split_by_heading(body)
     filled: list[str] = []
     for name in declared:
-        if name.lower() in headings:
+        content = sections.get(name.lower(), "")
+        # Link definitions alone do not render any section content.
+        content = re.sub(r"^ {0,3}\[[^\]\n]+\]:[^\n]*(?:\n|$)", "", content, flags=re.MULTILINE)
+        if content.strip():
             filled.append(name)
     return filled
 
 
 def _split_by_heading(body: str) -> dict[str, str]:
     """Map lowercased H2 heading -> the text under it (until the next H2)."""
+    # Strip before splitting: a heading inside a multiline comment is hidden too.
+    body = re.sub(r"<!--.*?(?:-->|\Z)", "", body, flags=re.DOTALL)
     parts = re.split(r"^##\s+", body, flags=re.MULTILINE)
     by_heading: dict[str, str] = {}
     for chunk in parts[1:]:
