@@ -61,7 +61,9 @@ def _sections_filled(body: str, declared: list[str]) -> list[str]:
 def _split_by_heading(body: str) -> dict[str, str]:
     """Map lowercased H2 heading -> the text under it (until the next H2)."""
     # Strip before splitting: a heading inside a multiline comment is hidden too.
-    body = re.sub(r"<!--.*?(?:-->|\Z)", "", body, flags=re.DOTALL)
+    # Only an unclosed comment that opens a line hides the rest of the file;
+    # a stray "<!--" mid-line (e.g. in inline code) renders as literal text.
+    body = re.sub(r"<!--.*?-->|^ {0,3}<!--.*\Z", "", body, flags=re.DOTALL | re.MULTILINE)
     parts = re.split(r"^##\s+", body, flags=re.MULTILINE)
     by_heading: dict[str, str] = {}
     for chunk in parts[1:]:

@@ -122,6 +122,8 @@ def test_make_row_includes_required_fields(procurement_tenant_dir, fixture_brief
     assert row["tenant_id"] == "procurement-analyst"
     assert row["iso_week"] == "2026-W34"
     assert 0.0 <= row["voice_score"] <= 1.0
+
+
 def test_hidden_comment_heading_is_not_a_filled_section():
     from brief_matrix.score import _sections_filled
 
@@ -133,3 +135,20 @@ def test_reference_definition_alone_is_not_a_filled_section():
     from brief_matrix.score import _sections_filled
 
     assert _sections_filled("## intro\n[ref]: https://example.invalid/x\n", ["intro"]) == []
+
+
+def test_unclosed_comment_marker_mid_line_does_not_hide_later_sections():
+    from brief_matrix.score import _sections_filled
+
+    body = (
+        "## intro\n\nUse `<!--` to open an HTML comment.\n\n"
+        "## items\n\nAn item [a](https://example.invalid/a).\n"
+    )
+    assert _sections_filled(body, ["intro", "items"]) == ["intro", "items"]
+
+
+def test_unclosed_comment_opening_a_line_hides_the_rest():
+    from brief_matrix.score import _sections_filled
+
+    body = "## intro\n\nVisible.\n\n<!--\n## items\n\nDraft only.\n"
+    assert _sections_filled(body, ["intro", "items"]) == ["intro"]
