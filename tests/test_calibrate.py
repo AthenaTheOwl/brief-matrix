@@ -122,6 +122,8 @@ def test_make_row_includes_required_fields(procurement_tenant_dir, fixture_brief
     assert row["tenant_id"] == "procurement-analyst"
     assert row["iso_week"] == "2026-W34"
     assert 0.0 <= row["voice_score"] <= 1.0
+
+
 def test_hidden_comment_heading_is_not_a_filled_section():
     from brief_matrix.score import _sections_filled
 
@@ -133,3 +135,96 @@ def test_reference_definition_alone_is_not_a_filled_section():
     from brief_matrix.score import _sections_filled
 
     assert _sections_filled("## intro\n[ref]: https://example.invalid/x\n", ["intro"]) == []
+
+
+def test_unclosed_comment_marker_mid_line_does_not_hide_later_sections():
+    from brief_matrix.score import _sections_filled
+
+    body = (
+        "## intro\n\nUse `<!--` to open an HTML comment.\n\n"
+        "## items\n\nAn item [a](https://example.invalid/a).\n"
+    )
+    assert _sections_filled(body, ["intro", "items"]) == ["intro", "items"]
+
+
+def test_unclosed_comment_opening_a_line_hides_the_rest():
+    from brief_matrix.score import _sections_filled
+
+    body = "## intro\n\nVisible.\n\n<!--\n## items\n\nDraft only.\n"
+    assert _sections_filled(body, ["intro", "items"]) == ["intro"]
+
+
+def test_indented_unclosed_comment_hides_the_rest_but_code_block_does_not():
+    from brief_matrix.score import _sections_filled
+
+    three = "## intro\n\nVisible.\n\n   <!--\n## items\n\nDraft.\n"
+    assert _sections_filled(three, ["intro", "items"]) == ["intro"]
+    four = (
+        "## intro\n\nVisible.\n\n    <!--\n\n"
+        "## items\n\nReal [a](https://example.invalid/a).\n"
+    )
+    assert _sections_filled(four, ["intro", "items"]) == ["intro", "items"]
+
+
+def test_mid_line_marker_does_not_pair_with_a_later_comment(tmp_path, procurement_tenant_dir):
+    tenant = load_tenant(procurement_tenant_dir)
+    brief = tmp_path / "marker.md"
+    brief.write_text(
+        "## intro\n\nUse `<!--` to open an HTML comment.\n\n"
+        "## items\n\nAn item [a](https://example.invalid/a).\n\n"
+        "## what-this-means\n\nMeaning [b](https://example.invalid/b).\n\n"
+        "## footer\n\n<!-- editor: confirm sources before Friday -->\n"
+        "Sources [c](https://example.invalid/c).\n",
+        encoding="utf-8",
+    )
+    result = calibrate.score(brief, tenant)
+    assert result.section_score == 1.0
+    assert result.citation_score == 1.0
+
+
+def test_mid_line_marker_does_not_pair_with_a_later_arrow():
+    from brief_matrix.score import _sections_filled
+
+    body = (
+        "## intro\n\nUse `<!--` to open an HTML comment.\n\n"
+        "## items\n\nAn item [a](https://example.invalid/a).\n\n"
+        "## what-this-means\n\nPrices moved Q3 --> Q4.\n"
+    )
+    names = ["intro", "items", "what-this-means"]
+    assert _sections_filled(body, names) == names
+
+
+def test_comment_marker_in_fenced_code_hides_nothing():
+    from brief_matrix.score import _sections_filled
+
+    body = (
+        "## intro\n\nExample markup:\n\n```html\n<!--\n```\n\n"
+        "## items\n\nAn item [a](https://example.invalid/a).\n"
+    )
+    assert _sections_filled(body, ["intro", "items"]) == ["intro", "items"]
+
+
+def test_short_empty_comments_close_themselves():
+    from brief_matrix.score import _sections_filled
+
+    for marker in ("<!-->", "<!--->"):
+        body = f"## intro\n\n{marker}\n\n## items\n\nx\n"
+        assert _sections_filled(body, ["intro", "items"]) == ["items"]
+
+
+def test_bracketed_prose_is_not_a_link_definition():
+    from brief_matrix.score import _sections_filled
+
+    body = (
+        "## intro\n\n[Update]: the agency re-bid the contract.\n\n"
+        "## footer\n\n[Next]: see [packet](https://example.invalid/p).\n"
+    )
+    assert _sections_filled(body, ["intro", "footer"]) == ["intro", "footer"]
+    titled = '## intro\n[ref]: <https://example.invalid/x> "Title"\n'
+    assert _sections_filled(titled, ["intro"]) == []
+
+
+def test_duplicate_heading_keeps_content_from_both_copies():
+    from brief_matrix.score import _sections_filled
+
+    assert _sections_filled("## intro\n\nReal text.\n\n## intro\n", ["intro"]) == ["intro"]

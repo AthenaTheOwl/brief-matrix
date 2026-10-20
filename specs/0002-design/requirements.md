@@ -25,7 +25,7 @@ runtime must do with it. R-BM-* numbering continues from 0001.
 
 - **R-BM-016** The calibration scorer emits a row with three axes:
   `voice_score`, `citation_score`, and `section_score`. Each is a
-  float in [0.0, 1.0]. Definitions live in `docs/methodology.md`.
+  float in [0.0, 1.0]. Definitions live in `docs/METHODOLOGY.md`.
 - **R-BM-017** `voice_score` is `1.0` if the brief passes voice-lint
   with the merged shared+tenant banlist, `0.0` otherwise. There are
   no partial credits for voice; the discipline is a hard gate.
@@ -53,7 +53,7 @@ runtime must do with it. R-BM-* numbering continues from 0001.
 ## Methodology surface
 
 - **R-BM-023** Each scoring axis is defined in
-  `docs/methodology.md`, with a worked example pulled from the
+  `docs/METHODOLOGY.md`, with a worked example pulled from the
   checked-in fixture brief. Changing the definition requires a new
   DEC-BM entry.
 - **R-BM-024** The first decision in the calibration era,

@@ -45,7 +45,7 @@ acceptance test from re-writing the checked-in ledger row.
   citation in `review-queue/procurement-analyst/2026-W34.md` and
   then to the `citation_score` in the checked-in ledger row.
 - The three calibration axes are defined unambiguously in
-  `docs/methodology.md`; an outside reader can compute the row by
+  `docs/METHODOLOGY.md`; an outside reader can compute the row by
   hand from the fixture brief and arrive at the same numbers.
 - `STATUS.md` carries the three required H2 sections (Current
   state / Known limits / Next feature queue) and reflects what

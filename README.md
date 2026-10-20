@@ -8,9 +8,6 @@ municipal row rather than another configuration file.
 
 ## What it does
 
-Section coverage requires reader-facing content below each required heading.
-An empty heading or an editorial comment does not complete the section.
-
 A weekly brief is easy to write and easy to let rot. The first one cites its
 sources; the tenth quietly stops. brief-matrix is the runtime that refuses to let
 that happen across more than one publisher at a time. A brief here is a typed
@@ -29,7 +26,9 @@ out of it.
 
 The three-axis scorer is the core of it: every draft gets scored on voice, citation
 coverage, and section conformance, and the result lands as an append-only row in the
-ledger. v0.1 ships procurement-analyst and municipal-budget-watch tenant contracts,
+ledger. Section conformance requires reader-facing content below each declared
+heading; an empty heading or an editorial comment does not complete the section.
+v0.1 ships procurement-analyst and municipal-budget-watch tenant contracts,
 plus one scored procurement row. An isolation test proves one tenant's overrides cannot
 weaken the other's banlist. The data adapter remains a fixture fetcher.
 

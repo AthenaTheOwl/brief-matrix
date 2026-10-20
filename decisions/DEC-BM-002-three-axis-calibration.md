@@ -2,7 +2,7 @@
 
 - **Status:** accepted
 - **Decided:** 2026-06-22
-- **Applies to:** specs/0002-design, docs/methodology.md
+- **Applies to:** specs/0002-design, docs/METHODOLOGY.md
 
 ## Context
 
@@ -17,7 +17,7 @@ candidates considered were:
 ## Decision
 
 The runtime ships option (2) with **three axes**: voice,
-citation, and section. Definitions live in `docs/methodology.md`.
+citation, and section. Definitions live in `docs/METHODOLOGY.md`.
 A semantic citation-faithfulness check (does the cited URL
 actually support the inline claim?) is **deferred** to spec 0003.
 
