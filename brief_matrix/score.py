@@ -19,6 +19,19 @@ from brief_matrix import voice_gate
 FRONT_MATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 H2_RE = re.compile(r"^##\s+(.+?)\s*$", re.MULTILINE)
 INLINE_LINK_RE = re.compile(r"\[[^\]]+\]\((https?://[^)\s]+)\)")
+# A link reference definition: label, destination, optional title, nothing else.
+LINK_DEF_RE = re.compile(
+    r"^ {0,3}\[[^\]\n]+\]:[ \t]*(?:<[^>\n]*>|\S+)"
+    r"(?:[ \t]+(?:\"[^\"\n]*\"|'[^'\n]*'|\([^)\n]*\)))?[ \t]*(?:\r?\n|$)",
+    re.MULTILINE,
+)
+FENCE_OPEN_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+BLOCK_COMMENT_RE = re.compile(r"^ {0,3}<!--")
+# An inline comment stays inside its paragraph: it cannot cross a blank line
+# or a heading. A "<!--" with no "-->" in the same paragraph is literal text.
+INLINE_COMMENT_RE = re.compile(
+    r"<!--(?:(?!\n[ \t\r]*\n|\n {0,3}#).)*?-->", re.DOTALL
+)
 
 
 @dataclass
@@ -52,23 +65,77 @@ def _sections_filled(body: str, declared: list[str]) -> list[str]:
     for name in declared:
         content = sections.get(name.lower(), "")
         # Link definitions alone do not render any section content.
-        content = re.sub(r"^ {0,3}\[[^\]\n]+\]:[^\n]*(?:\n|$)", "", content, flags=re.MULTILINE)
+        content = LINK_DEF_RE.sub("", content)
         if content.strip():
             filled.append(name)
     return filled
 
 
+def _strip_comments(body: str) -> str:
+    """Remove HTML comments the way a CommonMark renderer hides them.
+
+    A line opening with "<!--" (up to 3 spaces of indent) starts a comment
+    block that ends on the first line containing "-->", or runs to the end of
+    the file when unclosed. "<!-->" and "<!--->" close themselves. Elsewhere a
+    comment is inline and must close within its paragraph. Fenced code is
+    left alone, so a "<!--" shown in a code sample hides nothing.
+    """
+    out: list[str] = []
+    prose: list[str] = []
+
+    def flush() -> None:
+        out.append(INLINE_COMMENT_RE.sub("", "".join(prose)))
+        prose.clear()
+
+    fence = ""
+    in_comment = False
+    for line in body.splitlines(keepends=True):
+        if fence:
+            out.append(line)
+            stripped = line.strip()
+            if stripped.startswith(fence) and not stripped.strip(fence[0]):
+                fence = ""
+            continue
+        if in_comment:
+            end = line.find("-->")
+            if end != -1:
+                in_comment = False
+                prose.append(line[end + 3:])
+            continue
+        fence_match = FENCE_OPEN_RE.match(line)
+        if fence_match:
+            flush()
+            fence = fence_match.group(1)
+            out.append(line)
+            continue
+        block_match = BLOCK_COMMENT_RE.match(line)
+        if block_match:
+            flush()
+            # Search from the "--" of "<!--" so "<!-->" counts as closed.
+            end = line.find("-->", block_match.end() - 2)
+            if end == -1:
+                in_comment = True
+            else:
+                prose.append(line[:block_match.end() - 4] + line[end + 3:])
+            continue
+        prose.append(line)
+    flush()
+    return "".join(out)
+
+
 def _split_by_heading(body: str) -> dict[str, str]:
-    """Map lowercased H2 heading -> the text under it (until the next H2)."""
+    """Map lowercased H2 heading -> the text under it (until the next H2).
+
+    A heading that appears twice keeps the text under both copies.
+    """
     # Strip before splitting: a heading inside a multiline comment is hidden too.
-    # Only an unclosed comment that opens a line hides the rest of the file;
-    # a stray "<!--" mid-line (e.g. in inline code) renders as literal text.
-    body = re.sub(r"<!--.*?-->|^ {0,3}<!--.*\Z", "", body, flags=re.DOTALL | re.MULTILINE)
+    body = _strip_comments(body)
     parts = re.split(r"^##\s+", body, flags=re.MULTILINE)
     by_heading: dict[str, str] = {}
     for chunk in parts[1:]:
         head, _, rest = chunk.partition("\n")
-        by_heading[head.strip().lower()] = rest
+        key = head.strip().lower()
+        by_heading[key] = by_heading.get(key, "") + rest
     return by_heading
 
 
