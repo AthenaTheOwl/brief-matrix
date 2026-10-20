@@ -47,7 +47,8 @@ citation_score = sections_with_at_least_one_link / declared_sections
 
 A section "has a citation" when its body (the text under the H2
 heading whose name matches a declared section) contains at least
-one inline Markdown link to an `http://` or `https://` URL.
+one inline Markdown link to an `http://` or `https://` URL. A link
+inside an HTML comment does not count; the reader never sees it.
 
 If the brief carries zero inline links at all, `citation_score`
 collapses to `0.0` regardless of section count. This catches the
@@ -66,7 +67,11 @@ section_score = declared_sections_present / declared_sections
 ```
 
 A section is "present" when an H2 heading in the brief matches a
-declared section name (case-insensitive). Extra H2 headings that
+declared section name (case-insensitive) and has rendered content
+below it. HTML comments and bare link reference definitions are
+removed first, so an empty heading, or one followed only by
+comments or link definitions, is not present (DEC-BM-003). A
+heading inside an HTML comment does not count. Extra H2 headings that
 do not match a declared section do not raise the score; they
 appear in the row's `notes` field for the reviewer to inspect.
 

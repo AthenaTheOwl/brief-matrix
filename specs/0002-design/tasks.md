@@ -34,7 +34,7 @@ Ordered task list for the v0.1 runtime and calibration ledger.
 - [x] `review-queue/procurement-analyst/2026-W34.md` fixture draft
 - [x] `ledger/2026-W25-calibration-run.json` first checked-in row
 - [x] `tests/test_cli.py`
-- [x] `docs/methodology.md`
+- [x] `docs/METHODOLOGY.md`
 - [x] `decisions/DEC-BM-001-v0-persona-choice.md`
 - [x] `decisions/DEC-BM-002-three-axis-calibration.md`
 

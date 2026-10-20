@@ -75,7 +75,7 @@ brief_matrix.loader.load_tenant()
         brief_matrix.score.score(brief_path, tenant)
                 │
                 ├── voice_gate.check_tenant() → voice_score ∈ {0, 1}
-                ├── H2-vs-declared-sections  → section_score ∈ [0, 1]
+                ├── filled-H2-vs-declared    → section_score ∈ [0, 1]
                 └── inline-link-per-section  → citation_score ∈ [0, 1]
                 │
                 ▼

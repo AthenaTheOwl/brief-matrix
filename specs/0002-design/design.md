@@ -62,7 +62,8 @@ axes are computed independently so each can be diffed across runs:
   `[…](http…)` link, divided by section count. Zero citations
   collapses to 0.0 regardless.
 - **section_score**: count of declared sections that the brief
-  actually fills (matched by H2 headings), divided by declared
+  actually fills (a matching H2 heading with rendered content below
+  it, not just comments or link definitions), divided by declared
   section count. Extra H2s are noted in `notes` but do not raise
   the score.
 
